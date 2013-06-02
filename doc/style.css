@@ -1,0 +1,59 @@
+body {
+    font-family: sans-serif;
+    color: black;
+    background: white;
+    background-position: top left;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    margin: 2em 1em 2em 70px;
+    max-width: 50em;
+}
+
+h1, h2, h3, h4, h5 { text-align: left }
+h1, h2, h3 { color: #375EAB }
+h1 { font: 180% sans-serif }
+h2 { font: 140% sans-serif }
+h3 { font: 115% sans-serif }
+h4 { font: bold 100% sans-serif }
+h5 { font: italic 100% sans-serif }
+
+h2 {
+    background: #E0EBF5;
+    padding: 2px 5px;
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    border-radius: 5px;
+}
+
+pre, code {
+    font-family: monospace;
+}
+
+pre {
+    background: #e9e9e9;
+    padding: 10px;
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    border-radius: 5px;
+    margin-left: 2em
+}
+
+img {
+    color: white;
+    border: none
+}
+
+// Definition lists
+dt, dd {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+dt {
+    font-weight: bold;
+}
+
+// Tables
+th, td {
+    font-family: sans-serif;
+    color: black;
+}

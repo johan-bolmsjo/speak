@@ -1,0 +1,248 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+<meta charset="UTF-8">
+<title>The Speak Interface Definition Language</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<h1>Speak</h1>
+
+<p><em>Speak</em> is a lightweight interface definition language (IDL) similar
+to thrift and protocol buffers. The encoding format is the one defined
+by <a href="http://msgpack.org/">msgpack</a>.</p>
+
+<p>Some defining features of <em>Speak</em>:</p>
+
+<ul>
+<li>Source files can be structured in packages.</li>
+<li>Messages contain tagged fields of basic types or message types.</li>
+<li>Message fields can be fixed or dynamic arrays of types.</li>
+<li>All message fields are optional.</li>
+<li>Message fields of basic types containing its zero value are not encoded.</li>
+<li>It&rsquo;s possible to define custom message field types that can be  extended
+with support functions in the native language.</li>
+<li>It&rsquo;s possible to decode encoded data without the IDL specification
+(although with some type information missing).</li>
+<li>With care it&rsquo;s possible to increase the size of integer message
+fields and stay compatible with old encoded data. The encoded
+integer format is always the smallest possible. Similarly array
+sizes can be increased and still be compatible.</li>
+<li>Nested message definitions are not allowed, this favours code generation
+for non-inheritance based languages.</li>
+<li>There&rsquo;s no RPC mechanism.</li>
+</ul>
+
+<h1>Syntax</h1>
+
+<p>Most of the <em>Speak</em> syntax is defined in EBNF.
+The following operators are used: Alteration <code>|</code>, grouping <code>()</code>, option <code>[]</code>, repetition <code>{}</code>.</p>
+
+<h2>Comments</h2>
+
+<p>Comments start with the character sequence <code>//</code> and stop at the end of the line.</p>
+
+<h2>Keywords</h2>
+
+<p>The following words are keywords in <em>Speak</em>.</p>
+
+<pre><code>end       package
+enum      type
+message
+</code></pre>
+
+<h2>Basic Types</h2>
+
+<pre><code>BasicType = &quot;bool&quot; | &quot;byte&quot; | &quot;float32&quot; | &quot;float64&quot; |
+            &quot;int8&quot; | &quot;int16&quot; | &quot;int32&quot; | &quot;int64&quot; | &quot;string&quot; |
+            &quot;uint8&quot; | &quot;uint16&quot; | &quot;uint32&quot; | &quot;uint64&quot; .
+</code></pre>
+
+<h3>bool</h3>
+
+<p>Boolean with value <em>true</em> or <em>false</em>, the zero value is <em>false</em>.</p>
+
+<h3>float32, float64</h3>
+
+<p>32 and 64 bit IEEE floating point numbers, the zero value is <em>0</em>.</p>
+
+<h3>int8, int16, int32, int64</h3>
+
+<p>Signed integers, the zero value is <em>0</em>.</p>
+
+<h3>string</h3>
+
+<p>UTF8 string of dynamic length, the zero value is <em>&rdquo;&rdquo;</em>.</p>
+
+<h3>byte, uint8, uint16, uint32, uint64</h3>
+
+<p>Unsigned integers, the zero value is <em>0</em>.</p>
+
+<h2>Messages</h2>
+
+<p>Messages define the structures that can be encoded and decoded.</p>
+
+<pre><code>MessageDef       = &quot;message&quot; BigIdentifier NewLine { MessageField } End .
+MessageField     = Tag LittleIdentifier [ Array ] TypeIdentifier NewLine .
+TypeIdentifier   = BasicType | [ Identifier &quot;.&quot; ] BigIdentifier .
+</code></pre>
+
+<h2>Enumerations</h2>
+
+<p>Enumerations associate symbolic names with positive integer values.
+They are encoded as msgpack integer types.</p>
+
+<pre><code>EnumDef   = &quot;enum&quot; BigIdentifier NewLine { EnumField } End .
+EnumField = Tag BigIdentifier NewLine .
+</code></pre>
+
+<h2>Custom Types</h2>
+
+<p>Custom types can be used as message field types. The intended purpose
+of custom types is to provide a means to add functionality to them in
+the native language. For example an IPv6 pretty printer could be
+written for a type defined as follows:</p>
+
+<pre><code>type Ipv6Address [16]byte
+</code></pre>
+
+<p>The grammar is as follows:</p>
+
+<pre><code>TypeDef = &quot;type&quot; BigIdentifier [ Array ] BasicType NewLine .
+</code></pre>
+
+<h2>Packages</h2>
+
+<p>Each <em>Speak</em> source file must belong to a package. A type can be
+referenced by another package by prefixing the message field type
+with &ldquo;packagename.&rdquo;. There is no import statement as the referenced
+package name is available in the type reference. Circular imports are
+not allowed. I.e. package <em>A</em> must not reference types in package <em>B</em>
+while package <em>B</em> reference types in package <em>A</em>.</p>
+
+<pre><code>PackageDef = &quot;package&quot; Identifier NewLine .
+</code></pre>
+
+<h2>Complete Grammar</h2>
+
+<p>The complete grammar to parse <em>Speak</em> (except comments).</p>
+
+<pre><code>Grammar = { EnumDef | MessageDef | PackageDef | TypeDef } .
+</code></pre>
+
+<h2>Misc Grammar</h2>
+
+<pre><code>PositiveNumber   = Digit | &quot;1&quot; ... &quot;9&quot; { Digit } .
+Digit            = &quot;0&quot; ... &quot;9&quot; .
+Letter           = LowerCaseLetter | CapitalLetter .
+LowerCaseLetter  = &quot;a&quot; ... &quot;z&quot; .
+CapitalLetter    = &quot;A&quot; ... &quot;Z&quot; .
+Identifier       = Letter { Letter | Digit } .
+BigIdentifier    = CapitalLetter { Letter | Digit } .
+LittleIdentifier = LowerCaseLetter { Letter | Digit } .
+Tag              = PositiveNumber &quot;:&quot; .
+End              = &quot;end&quot; NewLine .
+Array            = &quot;[&quot; [ Length ] &quot;]&quot; .
+Length           = PositiveNumber .
+NewLine          = &quot;\n&quot; .
+</code></pre>
+
+<h1>Design Considerations</h1>
+
+<p>The rationale for some design choices are listed here.
+The primary languages that code generation is planed for is C, Go and
+C++, this affects some decisions.</p>
+
+<ul>
+<li><p>No underscore letters are allowed in the field or type names to be
+able to string together package, type and field names with
+underscores in the C generated code. Camel case will have to do.</p></li>
+
+<li><p>The rule that types must begin with a capital letter and fields
+with a lowercase one is mostly for aesthetic reasons. However in Go
+the field names will have to be converted to begin with a capital letter
+to be exported from its package. At least this rule will disallow two
+fields with the same name except the capitalisation of the first letter.</p></li>
+
+<li><p>Circular package dependencies are not allowed to make code generation easier.</p></li>
+</ul>
+
+<h1>Encoding Format</h1>
+
+<p>The encoding format is the one defined by <a href="http://msgpack.org/">msgpack</a>.
+All data is encoded in network byte order.</p>
+
+<h2>Opcode Table</h2>
+
+<p>Format: [Opcode] {Length | Value}[+] Type Comment</p>
+
+<p>+ Denotes that additional data follows the opcode and length field.
+xxx Denotes bits in the opcode that hold the value or length.</p>
+
+<pre><code>[0   xxxxxxx] {0}  Positive FixNum   // Range [0,127]
+[1 00 0 xxxx] {0}+ FixMap            // 0..15 entries
+[1 00 1 xxxx] {0}+ FixArray          // 0..15 entries
+[1 01 xxx xx] {0}+ FixRaw            // 0..31 bytes
+[1 10 000 10] {0}  false
+[1 10 000 11] {0}  true
+[1 10 010 10] {4}  float             // 32 bit IEEE float
+[1 10 010 11] {8}  double            // 64 bit IEEE float
+[1 10 011 00] {1}  uint 8
+[1 10 011 01] {2}  uint 16
+[1 10 011 10] {4}  uint 32
+[1 10 011 11] {8}  uint 64
+[1 10 100 00] {1}  int 8
+[1 10 100 01] {2}  int 16
+[1 10 100 10] {4}  int 32
+[1 10 100 11] {8}  int 64
+[1 10 110 10] {2}+ raw 16
+[1 10 110 11] {4}+ raw 32
+[1 10 111 00] {2}+ array 16
+[1 10 111 01] {4}+ array 32
+[1 10 111 10] {2}+ map 16
+[1 10 111 11] {4}+ map 32
+[1 11 xxx xx] {0}  Negative FixNum   // Range [-32,-1]
+</code></pre>
+
+<h2>Arrays</h2>
+
+<p>Arrays are used to encode <em>Speak</em> arrays except byte arrays.
+The length specifies the number of elements that follows.</p>
+
+<h2>Integers</h2>
+
+<p>The <em>Speak</em> integer types are encoded to the smallest possible
+msgpack integer type.</p>
+
+<h2>Maps</h2>
+
+<p>Maps are used to encode the <em>Speak</em> messages themselves.
+Message field tags are keys and message field values are values.
+The length specifies the number of key + value pairs that follows.</p>
+
+<h2>Raw (Bytes)</h2>
+
+<p>Raw buffers are used to encode <em>Speak</em> byte arrays and strings.
+The length specifies the number of bytes that follows.</p>
+
+<h1>Example</h1>
+
+<pre><code>package paint
+
+enum Color
+    1: Red
+    2: Green
+    3: Blue
+end
+
+type XyCoordinate [2]float32
+
+message PaintRequest
+    1: id           msg.Id        // Use type 'Id' in package 'msg'.
+    2: color        Color
+    3: brushSize    float32       // Brush size in millimetres.
+    4: xyCoordinate XyCoordinate
+end
+</code></pre>
+</body>
+</html>

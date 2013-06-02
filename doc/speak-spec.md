@@ -1,0 +1,245 @@
+
+Speak
+=====
+
+*Speak* is a lightweight interface definition language (IDL) similar
+to thrift and protocol buffers. The encoding format is the one defined
+by [msgpack](http://msgpack.org/).
+
+Some defining features of *Speak*:
+
+- Source files can be structured in packages.
+- Messages contain tagged fields of basic types or message types.
+- Message fields can be fixed or dynamic arrays of types.
+- All message fields are optional.
+- Message fields of basic types containing its zero value are not encoded.
+- It's possible to define custom message field types that can be  extended
+  with support functions in the native language.
+- It's possible to decode encoded data without the IDL specification
+  (although with some type information missing).
+- With care it's possible to increase the size of integer message
+  fields and stay compatible with old encoded data. The encoded
+  integer format is always the smallest possible. Similarly array
+  sizes can be increased and still be compatible.
+- Nested message definitions are not allowed, this favours code generation
+  for non-inheritance based languages.
+- There's no RPC mechanism.
+
+
+Syntax
+======
+
+Most of the *Speak* syntax is defined in EBNF.
+The following operators are used: Alteration `|`, grouping `()`, option `[]`, repetition `{}`.
+
+Comments
+--------
+
+Comments start with the character sequence `//` and stop at the end of the line. 
+
+Keywords
+--------
+
+The following words are keywords in *Speak*.
+
+    end       package
+    enum      type
+    message
+
+Basic Types
+-----------
+
+    BasicType = "bool" | "byte" | "float32" | "float64" |
+                "int8" | "int16" | "int32" | "int64" | "string" |
+                "uint8" | "uint16" | "uint32" | "uint64" .
+
+### bool
+
+Boolean with value *true* or *false*, the zero value is *false*.
+
+### float32, float64
+
+32 and 64 bit IEEE floating point numbers, the zero value is *0*.
+
+### int8, int16, int32, int64
+
+Signed integers, the zero value is *0*.
+
+### string
+
+UTF8 string of dynamic length, the zero value is *""*.
+
+### byte, uint8, uint16, uint32, uint64
+
+Unsigned integers, the zero value is *0*.
+
+Messages
+--------
+
+Messages define the structures that can be encoded and decoded.
+
+    MessageDef       = "message" BigIdentifier NewLine { MessageField } End .
+    MessageField     = Tag LittleIdentifier [ Array ] TypeIdentifier NewLine .
+    TypeIdentifier   = BasicType | [ Identifier "." ] BigIdentifier .
+
+Enumerations
+------------
+
+Enumerations associate symbolic names with positive integer values.
+They are encoded as msgpack integer types.
+
+    EnumDef   = "enum" BigIdentifier NewLine { EnumField } End .
+    EnumField = Tag BigIdentifier NewLine .
+
+Custom Types
+------------
+
+Custom types can be used as message field types. The intended purpose
+of custom types is to provide a means to add functionality to them in
+the native language. For example an IPv6 pretty printer could be
+written for a type defined as follows:
+
+    type Ipv6Address [16]byte
+
+The grammar is as follows:
+
+    TypeDef = "type" BigIdentifier [ Array ] BasicType NewLine .
+
+Packages
+--------
+
+Each *Speak* source file must belong to a package. A type can be
+referenced by another package by prefixing the message field type
+with "packagename.". There is no import statement as the referenced
+package name is available in the type reference. Circular imports are
+not allowed. I.e. package *A* must not reference types in package *B*
+while package *B* reference types in package *A*.
+
+    PackageDef = "package" Identifier NewLine .
+
+Complete Grammar
+----------------
+
+The complete grammar to parse *Speak* (except comments).
+
+    Grammar = { EnumDef | MessageDef | PackageDef | TypeDef } .
+
+Misc Grammar
+------------
+
+    PositiveNumber   = Digit | "1" ... "9" { Digit } .
+    Digit            = "0" ... "9" .
+    Letter           = LowerCaseLetter | CapitalLetter .
+    LowerCaseLetter  = "a" ... "z" .
+    CapitalLetter    = "A" ... "Z" .
+    Identifier       = Letter { Letter | Digit } .
+    BigIdentifier    = CapitalLetter { Letter | Digit } .
+    LittleIdentifier = LowerCaseLetter { Letter | Digit } .
+    Tag              = PositiveNumber ":" .
+    End              = "end" NewLine .
+    Array            = "[" [ Length ] "]" .
+    Length           = PositiveNumber .
+    NewLine          = "\n" .
+
+Design Considerations
+=====================
+
+The rationale for some design choices are listed here.
+The primary languages that code generation is planed for is C, Go and
+C++, this affects some decisions.
+
+- No underscore letters are allowed in the field or type names to be
+  able to string together package, type and field names with
+  underscores in the C generated code. Camel case will have to do.
+
+- The rule that types must begin with a capital letter and fields
+  with a lowercase one is mostly for aesthetic reasons. However in Go
+  the field names will have to be converted to begin with a capital letter
+  to be exported from its package. At least this rule will disallow two
+  fields with the same name except the capitalisation of the first letter.
+
+- Circular package dependencies are not allowed to make code generation easier.
+
+Encoding Format
+===============
+
+The encoding format is the one defined by [msgpack](http://msgpack.org/).
+All data is encoded in network byte order.
+
+Opcode Table
+------------
+
+Format: [Opcode] {Length | Value}[+] Type Comment
+
+\+ Denotes that additional data follows the opcode and length field.
+xxx Denotes bits in the opcode that hold the value or length.
+
+    [0   xxxxxxx] {0}  Positive FixNum   // Range [0,127]
+    [1 00 0 xxxx] {0}+ FixMap            // 0..15 entries
+    [1 00 1 xxxx] {0}+ FixArray          // 0..15 entries
+    [1 01 xxx xx] {0}+ FixRaw            // 0..31 bytes
+    [1 10 000 10] {0}  false
+    [1 10 000 11] {0}  true
+    [1 10 010 10] {4}  float             // 32 bit IEEE float
+    [1 10 010 11] {8}  double            // 64 bit IEEE float
+    [1 10 011 00] {1}  uint 8
+    [1 10 011 01] {2}  uint 16
+    [1 10 011 10] {4}  uint 32
+    [1 10 011 11] {8}  uint 64
+    [1 10 100 00] {1}  int 8
+    [1 10 100 01] {2}  int 16
+    [1 10 100 10] {4}  int 32
+    [1 10 100 11] {8}  int 64
+    [1 10 110 10] {2}+ raw 16
+    [1 10 110 11] {4}+ raw 32
+    [1 10 111 00] {2}+ array 16
+    [1 10 111 01] {4}+ array 32
+    [1 10 111 10] {2}+ map 16
+    [1 10 111 11] {4}+ map 32
+    [1 11 xxx xx] {0}  Negative FixNum   // Range [-32,-1]
+
+Arrays
+------
+
+Arrays are used to encode *Speak* arrays except byte arrays.
+The length specifies the number of elements that follows.
+
+Integers
+--------
+
+The *Speak* integer types are encoded to the smallest possible
+msgpack integer type.
+
+Maps
+----
+
+Maps are used to encode the *Speak* messages themselves.
+Message field tags are keys and message field values are values.
+The length specifies the number of key + value pairs that follows.
+
+Raw (Bytes)
+-----------
+
+Raw buffers are used to encode *Speak* byte arrays and strings.
+The length specifies the number of bytes that follows.
+
+
+Example
+=======
+
+    package paint
+
+    enum Color
+        1: Red
+        2: Green
+        3: Blue
+    end
+
+    type XyCoordinate [2]float32
+
+    message PaintRequest
+        1: id           msg.Id        // Use type 'Id' in package 'msg'.
+        2: color        Color
+        3: brushSize    float32       // Brush size in millimetres.
+        4: xyCoordinate XyCoordinate
+    end
