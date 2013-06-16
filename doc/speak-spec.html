@@ -51,6 +51,8 @@ enum      type
 message
 </code></pre>
 
+<p>Keywords are not allowed to be used as message field names.</p>
+
 <h2>Basic Types</h2>
 
 <pre><code>BasicType = &quot;bool&quot; | &quot;byte&quot; | &quot;float32&quot; | &quot;float64&quot; |
@@ -78,6 +80,31 @@ message
 
 <p>Unsigned integers, the zero value is <em>0</em>.</p>
 
+<h2>Custom Types</h2>
+
+<p>Custom types can be used as message field types. The intended purpose
+of custom types is to provide a means to add functionality to them in
+the native language. For example an IPv6 pretty printer could be
+written for a type defined as follows:</p>
+
+<pre><code>type Ipv6Address [16]byte
+</code></pre>
+
+<p>The grammar is as follows:</p>
+
+<pre><code>TypeDef = &quot;type&quot; BigIdentifier [ Array ] BasicType NewLine .
+</code></pre>
+
+<h2>Arrays</h2>
+
+<p>There are two types of arrays, fixed sized and dynamic sized.
+The syntax for fixed sized arrays is &ldquo;[<em>number</em>]&ldquo;, where <em>number</em> is
+a positive non-zero integer value. The syntax for dynamic sized arrays
+is &ldquo;[]&ldquo;.</p>
+
+<pre><code>Array  = &quot;[&quot; [ PositiveNumber ] &quot;]&quot; .
+</code></pre>
+
 <h2>Messages</h2>
 
 <p>Messages define the structures that can be encoded and decoded.</p>
@@ -94,21 +121,6 @@ They are encoded as msgpack integer types.</p>
 
 <pre><code>EnumDef   = &quot;enum&quot; BigIdentifier NewLine { EnumField } End .
 EnumField = Tag BigIdentifier NewLine .
-</code></pre>
-
-<h2>Custom Types</h2>
-
-<p>Custom types can be used as message field types. The intended purpose
-of custom types is to provide a means to add functionality to them in
-the native language. For example an IPv6 pretty printer could be
-written for a type defined as follows:</p>
-
-<pre><code>type Ipv6Address [16]byte
-</code></pre>
-
-<p>The grammar is as follows:</p>
-
-<pre><code>TypeDef = &quot;type&quot; BigIdentifier [ Array ] BasicType NewLine .
 </code></pre>
 
 <h2>Packages</h2>
@@ -142,30 +154,8 @@ BigIdentifier    = CapitalLetter { Letter | Digit } .
 LittleIdentifier = LowerCaseLetter { Letter | Digit } .
 Tag              = PositiveNumber &quot;:&quot; .
 End              = &quot;end&quot; NewLine .
-Array            = &quot;[&quot; [ Length ] &quot;]&quot; .
-Length           = PositiveNumber .
 NewLine          = &quot;\n&quot; .
 </code></pre>
-
-<h1>Design Considerations</h1>
-
-<p>The rationale for some design choices are listed here.
-The primary languages that code generation is planed for is C, Go and
-C++, this affects some decisions.</p>
-
-<ul>
-<li><p>No underscore letters are allowed in the field or type names to be
-able to string together package, type and field names with
-underscores in the C generated code. Camel case will have to do.</p></li>
-
-<li><p>The rule that types must begin with a capital letter and fields
-with a lowercase one is mostly for aesthetic reasons. However in Go
-the field names will have to be converted to begin with a capital letter
-to be exported from its package. At least this rule will disallow two
-fields with the same name except the capitalisation of the first letter.</p></li>
-
-<li><p>Circular package dependencies are not allowed to make code generation easier.</p></li>
-</ul>
 
 <h1>Encoding Format</h1>
 
@@ -244,5 +234,34 @@ message PaintRequest
     4: xyCoordinate XyCoordinate
 end
 </code></pre>
+
+<h1>Design Considerations</h1>
+
+<p>The rationale for some design choices are listed here.
+The primary languages that code generation is planed for is C, Go and
+C++, this affects some decisions.</p>
+
+<ul>
+<li><p>No underscore letters are allowed in the field or type names to be
+able to string together package, type and field names with
+underscores in the C generated code. Camel case will have to do.</p></li>
+
+<li><p>The rule that types must begin with a capital letter and fields
+with a lowercase one is mostly for aesthetic reasons. However in Go
+the field names will have to be converted to begin with a capital letter
+to be exported from its package. At least this rule will disallow two
+fields with the same name except the capitalisation of the first letter.</p></li>
+
+<li><p>Circular package dependencies are not allowed to make code generation easier.</p></li>
+</ul>
+
+<h1>Implementation Hints</h1>
+
+<h2>Name collisions with target language keywords</h2>
+
+<p>If a message field name happens to be a keyword in the target language
+the code generator can choose a slightly altered name. For example
+when generating code for C, a message field name called <em>int</em> could be
+renamed to <em>Int</em> in the generated code.</p>
 </body>
 </html>

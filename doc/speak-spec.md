@@ -46,6 +46,8 @@ The following words are keywords in *Speak*.
     enum      type
     message
 
+Keywords are not allowed to be used as message field names.
+
 Basic Types
 -----------
 
@@ -73,6 +75,30 @@ UTF8 string of dynamic length, the zero value is *""*.
 
 Unsigned integers, the zero value is *0*.
 
+Custom Types
+------------
+
+Custom types can be used as message field types. The intended purpose
+of custom types is to provide a means to add functionality to them in
+the native language. For example an IPv6 pretty printer could be
+written for a type defined as follows:
+
+    type Ipv6Address [16]byte
+
+The grammar is as follows:
+
+    TypeDef = "type" BigIdentifier [ Array ] BasicType NewLine .
+
+Arrays
+------
+
+There are two types of arrays, fixed sized and dynamic sized.
+The syntax for fixed sized arrays is "[*number*]", where *number* is
+a positive non-zero integer value. The syntax for dynamic sized arrays
+is "[]".
+
+    Array  = "[" [ PositiveNumber ] "]" .
+
 Messages
 --------
 
@@ -90,20 +116,6 @@ They are encoded as msgpack integer types.
 
     EnumDef   = "enum" BigIdentifier NewLine { EnumField } End .
     EnumField = Tag BigIdentifier NewLine .
-
-Custom Types
-------------
-
-Custom types can be used as message field types. The intended purpose
-of custom types is to provide a means to add functionality to them in
-the native language. For example an IPv6 pretty printer could be
-written for a type defined as follows:
-
-    type Ipv6Address [16]byte
-
-The grammar is as follows:
-
-    TypeDef = "type" BigIdentifier [ Array ] BasicType NewLine .
 
 Packages
 --------
@@ -137,28 +149,8 @@ Misc Grammar
     LittleIdentifier = LowerCaseLetter { Letter | Digit } .
     Tag              = PositiveNumber ":" .
     End              = "end" NewLine .
-    Array            = "[" [ Length ] "]" .
-    Length           = PositiveNumber .
     NewLine          = "\n" .
 
-Design Considerations
-=====================
-
-The rationale for some design choices are listed here.
-The primary languages that code generation is planed for is C, Go and
-C++, this affects some decisions.
-
-- No underscore letters are allowed in the field or type names to be
-  able to string together package, type and field names with
-  underscores in the C generated code. Camel case will have to do.
-
-- The rule that types must begin with a capital letter and fields
-  with a lowercase one is mostly for aesthetic reasons. However in Go
-  the field names will have to be converted to begin with a capital letter
-  to be exported from its package. At least this rule will disallow two
-  fields with the same name except the capitalisation of the first letter.
-
-- Circular package dependencies are not allowed to make code generation easier.
 
 Encoding Format
 ===============
@@ -243,3 +235,35 @@ Example
         3: brushSize    float32       // Brush size in millimetres.
         4: xyCoordinate XyCoordinate
     end
+
+
+Design Considerations
+=====================
+
+The rationale for some design choices are listed here.
+The primary languages that code generation is planed for is C, Go and
+C++, this affects some decisions.
+
+- No underscore letters are allowed in the field or type names to be
+  able to string together package, type and field names with
+  underscores in the C generated code. Camel case will have to do.
+
+- The rule that types must begin with a capital letter and fields
+  with a lowercase one is mostly for aesthetic reasons. However in Go
+  the field names will have to be converted to begin with a capital letter
+  to be exported from its package. At least this rule will disallow two
+  fields with the same name except the capitalisation of the first letter.
+
+- Circular package dependencies are not allowed to make code generation easier.
+
+
+Implementation Hints
+====================
+
+Name collisions with target language keywords
+---------------------------------------------
+
+If a message field name happens to be a keyword in the target language
+the code generator can choose a slightly altered name. For example
+when generating code for C, a message field name called *int* could be
+renamed to *Int* in the generated code.
