@@ -20,7 +20,6 @@ const (
 	itemError itemKind = iota
 	itemIdentifier
 	itemNumber
-	itemSpace
 	itemEol
 	itemEof
 	itemLeftBracket
@@ -53,7 +52,6 @@ var itemKindToStr = map[itemKind]string{
 	itemError:        "<error>",
 	itemIdentifier:   "<identifier>",
 	itemNumber:       "<number>",
-	itemSpace:        "<space>",
 	itemEol:          "<eol>",
 	itemEof:          "<eof>",
 	itemLeftBracket:  "[",
@@ -290,7 +288,7 @@ func lexSpace(l *lexer) stateFn {
 	for isSpace(l.peek()) {
 		l.next()
 	}
-	l.emit(itemSpace)
+	l.ignore()
 	return lexRoot
 }
 
