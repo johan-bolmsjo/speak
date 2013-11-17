@@ -1,39 +1,118 @@
+// Copyright 2013 Johan Bolmsjö
+//
+// Use of this source code is governed by a MIT style
+// license that can be found in the LICENSE file.
+
 package main
 
 import (
+	"errors"
+	"flag"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"strings"
 )
 
-var text = `
-package paint
+// ----------------------------------------------------------------------------
 
-enum Color
-    1: Red
-    2: Green
-    3: Blue
-end
+var usageMessage = `usage: speakc [-h] -lang c|go speak-files
 
-type XyCoordinate [2]float32
+Generate serialization code from speak interface definition files.
 
-message PaintRequest
-    1: id           msg.Id        // Use type 'Id' in package 'msg'.
-    2: color        Color
-    3: brushSize    float32       // Brush size in millimetres.
-    4: xyCoordinate XyCoordinate
-end
+Utility to breakdown a detailed OProfile report into functional domains.
+
+Options:
+    -h           Display this text.
+    -lang        Generate code for the specified language (c|go).
+    speak-files  Speak source files.
+
+Example:
+
+    speakc -lang c *.speak
 `
 
+// ----------------------------------------------------------------------------
+
+func readFile(pathname string) (string, error) {
+	data, err := ioutil.ReadFile(pathname)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+// ----------------------------------------------------------------------------
+
+type flags struct {
+	help       bool
+	lang       string
+	speakFiles []string
+}
+
+func (f *flags) Parse() error {
+	flag.BoolVar(&f.help, "h", false, "help message")
+	flag.StringVar(&f.lang, "lang", "", "language to generate code for")
+
+	err := error(nil)
+	flag.Usage = func() {
+		err = errors.New(usageMessage)
+	}
+	if flag.Parse(); err != nil {
+		return err
+	}
+	if f.help {
+		return errors.New(usageMessage)
+	}
+
+	var missing []string
+	if f.lang == "" {
+		missing = append(missing, "-lang")
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("missing argument(s): %s", strings.Join(missing, ","))
+	}
+
+	if f.lang != "c" && f.lang != "go" {
+		return fmt.Errorf("unsupported target language '%s'.", f.lang)
+	}
+
+	for _, arg := range flag.Args() {
+		f.speakFiles = append(f.speakFiles, arg)
+	}
+
+	return nil
+}
+
+// ----------------------------------------------------------------------------
+
 func main() {
-	lex := lex("test", text)
-	for {
-		item := lex.nextItem()
-		if item.kind == itemError {
-			fmt.Printf("error:%d: %v\n", lex.lineNumber(), item)
-		} else {
-			fmt.Printf("%v\n", item)
+	var f flags
+	if err := f.Parse(); err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		os.Exit(1)
+	}
+
+	for _, pathname := range f.speakFiles {
+		text, err := readFile(pathname)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%s\n", err)
+			os.Exit(1)
 		}
-		if item.kind == itemEof || item.kind == itemError {
-			break
+		lex := lex(pathname, text)
+		for {
+			item := lex.nextItem()
+			if item.kind == itemError {
+				fmt.Printf("error:%s:%d: %v\n", lex.name, lex.lineNumber(), item)
+				os.Exit(1)
+			} else {
+				fmt.Printf("%v\n", item)
+			}
+			if item.kind == itemEof || item.kind == itemError {
+				break
+			}
 		}
 	}
 }
+
+// ----------------------------------------------------------------------------

@@ -1,0 +1,20 @@
+//
+// Interface definition for the 'random' protocol.
+//
+
+package random
+
+choice Protocol
+    1: Request
+    2: Response
+end
+
+// Random number request.
+message Request
+    1: nbRandom uint32  // Number of random numbers requested.
+end
+
+// Random number response.
+message Response
+    values []uint32
+end

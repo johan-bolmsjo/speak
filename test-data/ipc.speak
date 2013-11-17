@@ -1,0 +1,23 @@
+//
+// Top level IPC interface definition.
+//
+
+package ipc
+
+// Top level message IPC message.
+message Message
+    1: proto Protocol     // Protocol choice.
+    2: kind  MessageKind  // Message kind.
+    3: id    uint32       // Message ID matching requests with responses.
+end
+
+enum MessageKind
+     0: OneWay
+     1: Request
+     2: Response
+end
+
+choice Protocol
+    1: image.Protocol
+    2: random.Protocol
+end

@@ -1,0 +1,40 @@
+//
+// Interface definition for the 'image' protocol.
+//
+
+package image
+
+choice Protocol
+    1: CanvasInfoRequest
+    2: CanvasInfoResponse
+    3: DrawDots
+end
+
+// Request: Canvas information.
+message CanvasInfoRequest
+end
+
+// Response: Canvas information.
+message CanvasInfoResponse
+    1: xyDimension XyDimension
+end
+
+// OneWay: Draw multiple dots on the canvas.
+message DrawDots
+    1: dots []Dot
+end
+
+// A single colored dot.
+message Dot
+    1: xyCoordinate XyCoordinate
+    2: color        Color
+end
+
+enum Color
+    1: Red
+    2: Green
+    3: Blue
+end
+
+type XyDimension  [2]float32
+type XyCoordinate [2]float32

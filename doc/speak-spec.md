@@ -2,14 +2,18 @@
 Speak
 =====
 
-*Speak* is a lightweight interface definition language (IDL) similar
-to thrift and protocol buffers. The encoding format is the one defined
-by [msgpack](http://msgpack.org/).
+*Speak* is a lightweight interface definition language (IDL) similar to thrift
+and protocol buffers. The encoding format is the one defined by
+[msgpack](http://msgpack.org/).
 
 Some defining features of *Speak*:
 
-- Source files can be structured in packages.
-- Messages contain tagged fields of basic types or message types.
+TODO: Rewrite this with some introductory piece.
+
+- Source files are structured in packages.
+- Choices select one of many other choice or message types.
+- Messages contain tagged fields of basic, custom, choice or other
+  message types.
 - Message fields can be fixed or dynamic arrays of types.
 - All message fields are optional.
 - Message fields of basic types containing its zero value are not encoded.
@@ -21,9 +25,6 @@ Some defining features of *Speak*:
   fields and stay compatible with old encoded data. The encoded
   integer format is always the smallest possible. Similarly array
   sizes can be increased and still be compatible.
-- Nested message definitions are not allowed, this favours code generation
-  for non-inheritance based languages.
-- There's no RPC mechanism.
 
 
 Syntax
@@ -42,11 +43,22 @@ Keywords
 
 The following words are keywords in *Speak*.
 
+    choice    message
     end       package
     enum      type
-    message
 
 Keywords are not allowed to be used as message field names.
+
+Arrays
+------
+
+TODO: Contemplate fixed size support.
+
+There are two types of arrays, fixed sized and dynamic sized. The syntax for
+fixed sized arrays is "[*number*]", where *number* is a positive non-zero
+integer value. The syntax for dynamic sized arrays is "[]".
+
+    Array  = "[" [ PositiveNumber ] "]" .
 
 Basic Types
 -----------
@@ -78,10 +90,12 @@ Unsigned integers, the zero value is *0*.
 Custom Types
 ------------
 
-Custom types can be used as message field types. The intended purpose
-of custom types is to provide a means to add functionality to them in
-the native language. For example an IPv6 pretty printer could be
-written for a type defined as follows:
+TODO: Contemplate custom type limitations.
+
+Custom types can be used as message field types. The intended purpose of custom
+types is to provide a means to add functionality to them in the native
+language. For example an IPv6 pretty printer could be written for a type defined
+as follows:
 
     type Ipv6Address [16]byte
 
@@ -89,30 +103,29 @@ The grammar is as follows:
 
     TypeDef = "type" BigIdentifier [ Array ] BasicType NewLine .
 
-Arrays
-------
+Choices
+-------
 
-There are two types of arrays, fixed sized and dynamic sized.
-The syntax for fixed sized arrays is "[*number*]", where *number* is
-a positive non-zero integer value. The syntax for dynamic sized arrays
-is "[]".
+Choices select one of many other choice or message types.
 
-    Array  = "[" [ PositiveNumber ] "]" .
+    ChoiceDef   = "choice" BigIdentifier NewLine { EnumField } End .
+    ChoiceField = Tag BigIdentifier NewLine .
 
 Messages
 --------
 
-Messages define the structures that can be encoded and decoded.
+Messages contain tagged fields of basic, custom, choice or other
+message types.
 
-    MessageDef       = "message" BigIdentifier NewLine { MessageField } End .
-    MessageField     = Tag LittleIdentifier [ Array ] TypeIdentifier NewLine .
-    TypeIdentifier   = BasicType | [ Identifier "." ] BigIdentifier .
+    MessageDef     = "message" BigIdentifier NewLine { MessageField } End .
+    MessageField   = Tag LittleIdentifier [ Array ] TypeIdentifier NewLine .
+    TypeIdentifier = BasicType | [ Identifier "." ] BigIdentifier .
 
 Enumerations
 ------------
 
-Enumerations associate symbolic names with positive integer values.
-They are encoded as msgpack integer types.
+Enumerations associate symbolic names with positive integer values. They are
+encoded as msgpack integer types.
 
     EnumDef   = "enum" BigIdentifier NewLine { EnumField } End .
     EnumField = Tag BigIdentifier NewLine .
@@ -120,12 +133,10 @@ They are encoded as msgpack integer types.
 Packages
 --------
 
-Each *Speak* source file must belong to a package. A type can be
-referenced by another package by prefixing the message field type
-with "packagename.". There is no import statement as the referenced
-package name is available in the type reference. Circular imports are
-not allowed. I.e. package *A* must not reference types in package *B*
-while package *B* reference types in package *A*.
+Each *Speak* source file must belong to a package. A type can be referenced by
+another package by prefixing the message field type with "packagename.". There
+is no import statement as the referenced package name is available in the type
+reference. Package dependencies must form a DAG.
 
     PackageDef = "package" Identifier NewLine .
 
@@ -199,21 +210,21 @@ The length specifies the number of elements that follows.
 Integers
 --------
 
-The *Speak* integer types are encoded to the smallest possible
-msgpack integer type.
+The *Speak* integer types are encoded to the smallest possible msgpack integer
+type.
 
 Maps
 ----
 
-Maps are used to encode the *Speak* messages themselves.
-Message field tags are keys and message field values are values.
-The length specifies the number of key + value pairs that follows.
+Maps are used to encode the *Speak* messages themselves. Message field tags are
+keys and message field values are values. The length specifies the number of
+key + value pairs that follows.
 
 Raw (Bytes)
 -----------
 
-Raw buffers are used to encode *Speak* byte arrays and strings.
-The length specifies the number of bytes that follows.
+Raw buffers are used to encode *Speak* byte arrays and strings. The length
+specifies the number of bytes that follows.
 
 
 Example
@@ -240,21 +251,21 @@ Example
 Design Considerations
 =====================
 
-The rationale for some design choices are listed here.
-The primary languages that code generation is planed for is C, Go and
-C++, this affects some decisions.
+The rationale for some design choices are listed here. The primary languages
+that code generation is planed for is C, Go and C++, this affects some
+decisions.
 
-- No underscore letters are allowed in the field or type names to be
-  able to string together package, type and field names with
-  underscores in the C generated code. Camel case will have to do.
+- No underscore letters are allowed in the field or type names to be able to
+  string together package, type and field names with underscores in the C
+  generated code. Camel case will have to do.
 
-- The rule that types must begin with a capital letter and fields
-  with a lowercase one is mostly for aesthetic reasons. However in Go
-  the field names will have to be converted to begin with a capital letter
-  to be exported from its package. At least this rule will disallow two
-  fields with the same name except the capitalisation of the first letter.
+- The rule that types must begin with a capital letter and fields with a
+  lowercase one is mostly for aesthetic reasons. However in Go the field names
+  will have to be converted to begin with a capital letter to be exported from
+  its package. At least this rule will disallow two fields with the same name
+  except the capitalisation of the first letter.
 
-- Circular package dependencies are not allowed to make code generation easier.
+- Package and type dependencies must form a DAG to make code generation simpler.
 
 
 Implementation Hints

@@ -26,6 +26,7 @@ const (
 	itemRightBracket
 	itemDot
 	itemColon
+	itemChoice
 	itemEnd
 	itemEnum
 	itemMessage
@@ -58,6 +59,7 @@ var itemKindToStr = map[itemKind]string{
 	itemRightBracket: "]",
 	itemDot:          ".",
 	itemColon:        ":",
+	itemChoice:       "choice",
 	itemEnd:          "end",
 	itemEnum:         "enum",
 	itemMessage:      "message",
@@ -79,6 +81,7 @@ var itemKindToStr = map[itemKind]string{
 }
 
 var strToItemKind = map[string]itemKind{
+	"choice":  itemChoice,
 	"end":     itemEnd,
 	"enum":    itemEnum,
 	"message": itemMessage,
