@@ -99,16 +99,16 @@ func main() {
 			fmt.Fprintf(os.Stderr, "%s\n", err)
 			os.Exit(1)
 		}
-		lex := lex(pathname, text)
+		lex := Lex(pathname, text)
 		for {
-			item := lex.nextItem()
-			if item.kind == itemError {
-				fmt.Printf("error:%s:%d: %v\n", lex.name, lex.lineNumber(), item)
+			item := lex.NextItem()
+			if item.Kind == ItemError {
+				fmt.Printf("error:%s:%d: %v\n", lex.Name, lex.LineNumber(), item)
 				os.Exit(1)
 			} else {
 				fmt.Printf("%v\n", item)
 			}
-			if item.kind == itemEof || item.kind == itemError {
+			if item.Kind == ItemEof || item.Kind == ItemError {
 				break
 			}
 		}

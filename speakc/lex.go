@@ -13,96 +13,96 @@ import (
 )
 
 // Identifies the type of item.
-type itemKind int
+type ItemKind int
 
 // Types of item.
 const (
-	itemError itemKind = iota
-	itemIdentifier
-	itemNumber
-	itemEol
-	itemEof
-	itemLeftBracket
-	itemRightBracket
-	itemDot
-	itemColon
-	itemChoice
-	itemEnd
-	itemEnum
-	itemMessage
-	itemPackage
-	itemType
-	itemBasicTypeBegin
-	itemBool
-	itemByte
-	itemInt8
-	itemInt16
-	itemInt32
-	itemInt64
-	itemUint8
-	itemUint16
-	itemUint32
-	itemUint64
-	itemFloat32
-	itemFloat64
-	itemString
-	itemBasicTypeEnd
+	ItemError ItemKind = iota
+	ItemIdentifier
+	ItemNumber
+	ItemEol
+	ItemEof
+	ItemLeftBracket
+	ItemRightBracket
+	ItemDot
+	ItemColon
+	ItemChoice
+	ItemEnd
+	ItemEnum
+	ItemMessage
+	ItemPackage
+	ItemType
+	ItemBasicTypeBegin
+	ItemBool
+	ItemByte
+	ItemInt8
+	ItemInt16
+	ItemInt32
+	ItemInt64
+	ItemUint8
+	ItemUint16
+	ItemUint32
+	ItemUint64
+	ItemFloat32
+	ItemFloat64
+	ItemString
+	ItemBasicTypeEnd
 )
 
-var itemKindToStr = map[itemKind]string{
-	itemError:        "<error>",
-	itemIdentifier:   "<identifier>",
-	itemNumber:       "<number>",
-	itemEol:          "<eol>",
-	itemEof:          "<eof>",
-	itemLeftBracket:  "[",
-	itemRightBracket: "]",
-	itemDot:          ".",
-	itemColon:        ":",
-	itemChoice:       "choice",
-	itemEnd:          "end",
-	itemEnum:         "enum",
-	itemMessage:      "message",
-	itemPackage:      "package",
-	itemType:         "type",
-	itemBool:         "bool",
-	itemByte:         "byte",
-	itemInt8:         "int8",
-	itemInt16:        "int16",
-	itemInt32:        "int32",
-	itemInt64:        "int64",
-	itemUint8:        "uint8",
-	itemUint16:       "uint16",
-	itemUint32:       "uint32",
-	itemUint64:       "uint64",
-	itemFloat32:      "float32",
-	itemFloat64:      "float64",
-	itemString:       "string",
+var itemKindToStr = map[ItemKind]string{
+	ItemError:        "<error>",
+	ItemIdentifier:   "<identifier>",
+	ItemNumber:       "<number>",
+	ItemEol:          "<eol>",
+	ItemEof:          "<eof>",
+	ItemLeftBracket:  "[",
+	ItemRightBracket: "]",
+	ItemDot:          ".",
+	ItemColon:        ":",
+	ItemChoice:       "choice",
+	ItemEnd:          "end",
+	ItemEnum:         "enum",
+	ItemMessage:      "message",
+	ItemPackage:      "package",
+	ItemType:         "type",
+	ItemBool:         "bool",
+	ItemByte:         "byte",
+	ItemInt8:         "int8",
+	ItemInt16:        "int16",
+	ItemInt32:        "int32",
+	ItemInt64:        "int64",
+	ItemUint8:        "uint8",
+	ItemUint16:       "uint16",
+	ItemUint32:       "uint32",
+	ItemUint64:       "uint64",
+	ItemFloat32:      "float32",
+	ItemFloat64:      "float64",
+	ItemString:       "string",
 }
 
-var strToItemKind = map[string]itemKind{
-	"choice":  itemChoice,
-	"end":     itemEnd,
-	"enum":    itemEnum,
-	"message": itemMessage,
-	"package": itemPackage,
-	"type":    itemType,
-	"bool":    itemBool,
-	"byte":    itemByte,
-	"int8":    itemInt8,
-	"int16":   itemInt16,
-	"int32":   itemInt32,
-	"int64":   itemInt64,
-	"uint8":   itemUint8,
-	"uint16":  itemUint16,
-	"uint32":  itemUint32,
-	"uint64":  itemUint64,
-	"float32": itemFloat32,
-	"float64": itemFloat64,
-	"string":  itemString,
+var strToItemKind = map[string]ItemKind{
+	"choice":  ItemChoice,
+	"end":     ItemEnd,
+	"enum":    ItemEnum,
+	"message": ItemMessage,
+	"package": ItemPackage,
+	"type":    ItemType,
+	"bool":    ItemBool,
+	"byte":    ItemByte,
+	"int8":    ItemInt8,
+	"int16":   ItemInt16,
+	"int32":   ItemInt32,
+	"int64":   ItemInt64,
+	"uint8":   ItemUint8,
+	"uint16":  ItemUint16,
+	"uint32":  ItemUint32,
+	"uint64":  ItemUint64,
+	"float32": ItemFloat32,
+	"float64": ItemFloat64,
+	"string":  ItemString,
 }
 
-func (kind itemKind) String() string {
+func (kind ItemKind) String() string {
 	if s, ok := itemKindToStr[kind]; ok {
 		return s
 	}
@@ -110,47 +110,47 @@ func (kind itemKind) String() string {
 }
 
 // Check if an item kind is a basic type.
-func (kind itemKind) isBasicType() bool {
-	if kind > itemBasicTypeBegin && kind < itemBasicTypeEnd {
+func (kind ItemKind) isBasicType() bool {
+	if kind > ItemBasicTypeBegin && kind < ItemBasicTypeEnd {
 		return true
 	}
 	return false
 }
 
 // item represents a token or text string returned from the scanner.
-type item struct {
-	kind  itemKind // The type of this item.
+type Item struct {
+	Kind  ItemKind // The type of this item.
+	Value string   // The value of this item.
 	pos   int      // The starting position, in bytes, of this item in the input string.
-	value string   // The value of this item.
 }
 
-func (item item) String() string {
+func (item Item) String() string {
 	switch {
-	case item.kind == itemError:
-		return item.value
-	case item.kind == itemIdentifier || item.kind == itemNumber:
-		return fmt.Sprintf("%v:%v", item.kind, item.value)
+	case item.Kind == ItemError:
+		return item.Value
+	case item.Kind == ItemIdentifier || item.Kind == ItemNumber:
+		return fmt.Sprintf("%v:%v", item.Kind, item.Value)
 	}
-	return fmt.Sprintf("%v", item.kind)
+	return fmt.Sprintf("%v", item.Kind)
 }
 
 const eof = -1
 
-type stateFn func(*lexer) stateFn
+type stateFn func(*Lexer) stateFn
 
-type lexer struct {
-	name    string    // Name of lexer for error reporting.
+type Lexer struct {
+	Name    string    // Name of lexer for error reporting.
 	input   string    // The string being scanned.
 	state   stateFn   // The next lexing function to enter.
 	pos     int       // Current position in input.
 	start   int       // Start position of item in input.
 	width   int       // Width of last rune read from input.
 	lastPos int       // Position of most recent item returned by nextItem
-	items   chan item // Scanned items.
+	items   chan Item // Scanned items.
 }
 
 // Returns the next rune in the input.
-func (l *lexer) next() rune {
+func (l *Lexer) next() rune {
 	if int(l.pos) >= len(l.input) {
 		l.width = 0
 		return eof
@@ -162,30 +162,30 @@ func (l *lexer) next() rune {
 }
 
 // Returns but does not consume the next rune in the input.
-func (l *lexer) peek() rune {
+func (l *Lexer) peek() rune {
 	r := l.next()
 	l.backup()
 	return r
 }
 
 // Steps back one rune. Can only be called once per call of next.
-func (l *lexer) backup() {
+func (l *Lexer) backup() {
 	l.pos -= l.width
 }
 
 // Passes a item back to the client.
-func (l *lexer) emit(kind itemKind) {
-	l.items <- item{kind, l.start, l.acceptStr()}
+func (l *Lexer) emit(kind ItemKind) {
+	l.items <- Item{kind, l.acceptStr(), l.start}
 	l.start = l.pos
 }
 
 // Skips over the pending input before this point.
-func (l *lexer) ignore() {
+func (l *Lexer) ignore() {
 	l.start = l.pos
 }
 
 // Consumes the next rune if it's from the valid set.
-func (l *lexer) accept(valid string) bool {
+func (l *Lexer) accept(valid string) bool {
 	if strings.IndexRune(valid, l.next()) >= 0 {
 		return true
 	}
@@ -194,56 +194,56 @@ func (l *lexer) accept(valid string) bool {
 }
 
 // Consumes a run of runes from the valid set.
-func (l *lexer) acceptRun(valid string) {
+func (l *Lexer) acceptRun(valid string) {
 	for strings.IndexRune(valid, l.next()) >= 0 {
 	}
 	l.backup()
 }
 
 // Returns the currently accepted string.
-func (l *lexer) acceptStr() string {
+func (l *Lexer) acceptStr() string {
 	return l.input[l.start:l.pos]
 }
 
 // Returns the current accept length.
-func (l *lexer) acceptLen() int {
+func (l *Lexer) acceptLen() int {
 	return l.pos - l.start
 }
 
 // Reports which line we're on, based on the position of
-// the previous item returned by nextItem. Doing it this way
+// the previous item returned by NextItem. Doing it this way
 // means we don't have to worry about peek double counting.
-func (l *lexer) lineNumber() int {
+func (l *Lexer) LineNumber() int {
 	return 1 + strings.Count(l.input[:l.lastPos], "\n")
 }
 
 // Returns an error token and terminates the scan by passing
 // back a nil pointer that will be the next state, terminating l.nextItem.
-func (l *lexer) errorf(format string, args ...interface{}) stateFn {
-	l.items <- item{itemError, l.start, fmt.Sprintf(format, args...)}
+func (l *Lexer) errorf(format string, args ...interface{}) stateFn {
+	l.items <- Item{ItemError, fmt.Sprintf(format, args...), l.start}
 	return nil
 }
 
 // nextItem returns the next item from the input.
-func (l *lexer) nextItem() item {
+func (l *Lexer) NextItem() Item {
 	item := <-l.items
 	l.lastPos = item.pos
 	return item
 }
 
 // Creates a new scanner for the input string.
-func lex(name, input string) *lexer {
-	l := &lexer{
-		name:  name,
+func Lex(name, input string) *Lexer {
+	l := &Lexer{
+		Name:  name,
 		input: input,
-		items: make(chan item),
+		items: make(chan Item),
 	}
 	go l.run()
 	return l
 }
 
 // Runs the state machine for the lexer.
-func (l *lexer) run() {
+func (l *Lexer) run() {
 	for l.state = lexRoot; l.state != nil; {
 		l.state = l.state(l)
 	}
@@ -254,11 +254,11 @@ func (l *lexer) run() {
 //
 
 // Top level lexer.
-func lexRoot(l *lexer) stateFn {
+func lexRoot(l *Lexer) stateFn {
 	for {
 		switch r := l.next(); {
 		case r == eof:
-			l.emit(itemEof)
+			l.emit(ItemEof)
 			return nil
 		case r == '/' && l.peek() == '/':
 			l.next()
@@ -268,13 +268,13 @@ func lexRoot(l *lexer) stateFn {
 		case isSpace(r):
 			return lexSpace
 		case r == '[':
-			l.emit(itemLeftBracket)
+			l.emit(ItemLeftBracket)
 		case r == ']':
-			l.emit(itemRightBracket)
+			l.emit(ItemRightBracket)
 		case r == '.':
-			l.emit(itemDot)
+			l.emit(ItemDot)
 		case r == ':':
-			l.emit(itemColon)
+			l.emit(ItemColon)
 		case isLetter(r):
 			return lexIdentifier
 		case isDigit(r):
@@ -287,7 +287,7 @@ func lexRoot(l *lexer) stateFn {
 
 // Scans a run of space characters.
 // One space has already been seen.
-func lexSpace(l *lexer) stateFn {
+func lexSpace(l *Lexer) stateFn {
 	for isSpace(l.peek()) {
 		l.next()
 	}
@@ -297,17 +297,17 @@ func lexSpace(l *lexer) stateFn {
 
 // Scans a run of EOL characters.
 // One EOL character has already been seen.
-func lexEol(l *lexer) stateFn {
+func lexEol(l *Lexer) stateFn {
 	for isEol(l.peek()) {
 		l.next()
 	}
-	l.emit(itemEol)
+	l.emit(ItemEol)
 	return lexRoot
 }
 
 // Scans characters until EOL or EOF.
 // The comment marker '//' has already been seen.
-func lexComment(l *lexer) stateFn {
+func lexComment(l *Lexer) stateFn {
 	for r := l.peek(); !isEol(r) && r != eof; r = l.peek() {
 		l.next()
 	}
@@ -316,7 +316,7 @@ func lexComment(l *lexer) stateFn {
 }
 
 // Scans identifiers and keywords.
-func lexIdentifier(l *lexer) stateFn {
+func lexIdentifier(l *Lexer) stateFn {
 Loop:
 	for {
 		switch r := l.next(); {
@@ -330,7 +330,7 @@ Loop:
 			case itemKind != 0:
 				l.emit(itemKind)
 			default:
-				l.emit(itemIdentifier)
+				l.emit(ItemIdentifier)
 			}
 			break Loop
 		}
@@ -339,15 +339,15 @@ Loop:
 }
 
 // Scans a positive decimal number.
-func lexNumber(l *lexer) stateFn {
+func lexNumber(l *Lexer) stateFn {
 	if !l.scanNumber() {
 		return l.errorf("bad number syntax: %q", l.acceptStr())
 	}
-	l.emit(itemNumber)
+	l.emit(ItemNumber)
 	return lexRoot
 }
 
-func (l *lexer) scanNumber() bool {
+func (l *Lexer) scanNumber() bool {
 	l.acceptRun("0123456789")
 
 	// The first digit must not be '0' if there are more than one digits.
