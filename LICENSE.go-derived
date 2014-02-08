@@ -1,5 +1,5 @@
 This license pertains for the following Go language derived source files:
-- cmd/speakc/lex.go
+- speakc/lex.go
 
 -------------------------------------------------------------------------------
 Copyright (c) 2012 The Go Authors. All rights reserved.

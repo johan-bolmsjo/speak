@@ -22,7 +22,31 @@ func readFile(filename string) (string, error) {
 
 // ----------------------------------------------------------------------------
 
+// Parser holds the state from parsing one or more files.
 type Parser struct {
+	lexer *Lexer
+	item  Item
+}
+
+// Get the next item from the lexer.
+// Updates p.item or returns an error from the lexer.
+func (p *Parser) nextItem() error {
+	p.item = p.lexer.NextItem()
+	if p.item.Kind == ItemError {
+		return fmt.Errorf("error:%s:%d: %v", p.lexer.Name, p.lexer.LineNumber(), p.item)
+	}
+	return nil
+}
+
+func (p *Parser) ParseText(name, text string) error {
+	p.lexer = Lex(name, text)
+	for p.item.Kind != ItemEof {
+		if err := p.nextItem(); err != nil {
+			return err
+		}
+		fmt.Printf("%v\n", p.item)
+	}
+	return nil
 }
 
 func (p *Parser) ParseFile(filename string) error {
@@ -30,19 +54,7 @@ func (p *Parser) ParseFile(filename string) error {
 	if err != nil {
 		return err
 	}
-	lex := Lex(filename, text)
-	for {
-		item := lex.NextItem()
-		if item.Kind == ItemError {
-			return fmt.Errorf("error:%s:%d: %v", lex.Name, lex.LineNumber(), item)
-		} else {
-			fmt.Printf("%v\n", item)
-		}
-		if item.Kind == ItemEof || item.Kind == ItemError {
-			break
-		}
-	}
-	return nil
+	return p.ParseText(filename, text)
 }
 
 // ----------------------------------------------------------------------------
