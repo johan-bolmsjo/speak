@@ -9,7 +9,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 )
@@ -31,16 +30,6 @@ Example:
 
     speakc -lang c *.speak
 `
-
-// ----------------------------------------------------------------------------
-
-func readFile(pathname string) (string, error) {
-	data, err := ioutil.ReadFile(pathname)
-	if err != nil {
-		return "", err
-	}
-	return string(data), nil
-}
 
 // ----------------------------------------------------------------------------
 
@@ -93,24 +82,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	for _, pathname := range f.speakFiles {
-		text, err := readFile(pathname)
-		if err != nil {
+	parser := new(Parser)
+	for _, filename := range f.speakFiles {
+		if err := parser.ParseFile(filename); err != nil {
 			fmt.Fprintf(os.Stderr, "%s\n", err)
 			os.Exit(1)
-		}
-		lex := Lex(pathname, text)
-		for {
-			item := lex.NextItem()
-			if item.Kind == ItemError {
-				fmt.Printf("error:%s:%d: %v\n", lex.Name, lex.LineNumber(), item)
-				os.Exit(1)
-			} else {
-				fmt.Printf("%v\n", item)
-			}
-			if item.Kind == ItemEof || item.Kind == ItemError {
-				break
-			}
 		}
 	}
 }
