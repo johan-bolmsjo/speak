@@ -125,7 +125,7 @@ Enumerations
 ------------
 
 Enumerations associate symbolic names with positive integer values. They are
-encoded as msgpack integer types.
+encoded as msgpack integer types. The allowed value range is 0 to 2^32-1.
 
     EnumDef   = "enum" BigIdentifier NewLine { EnumField } End .
     EnumField = Tag BigIdentifier NewLine .
@@ -145,7 +145,7 @@ Complete Grammar
 
 The complete grammar to parse *Speak* (except comments).
 
-    Grammar = { EnumDef | MessageDef | PackageDef | TypeDef } .
+    Grammar = { ChoiceDef | EnumDef | MessageDef | PackageDef | TypeDef } .
 
 Misc Grammar
 ------------
