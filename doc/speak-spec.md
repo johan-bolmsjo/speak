@@ -108,8 +108,9 @@ Choices
 
 Choices select one of many other choice or message types.
 
-    ChoiceDef   = "choice" BigIdentifier NewLine { EnumField } End .
-    ChoiceField = Tag BigIdentifier NewLine .
+    ChoiceDef        = "choice" BigIdentifier NewLine { EnumField } End .
+    ChoiceField      = Tag ChoiceIdentifier NewLine .
+    ChoiceIdentifier = [ Identifier "." ] BigIdentifier
 
 Messages
 --------
