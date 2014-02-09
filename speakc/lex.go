@@ -121,15 +121,12 @@ func (kind ItemKind) isBasicType() bool {
 type Item struct {
 	Kind  ItemKind // The type of this item.
 	Value string   // The value of this item.
-	pos   int      // The starting position, in bytes, of this item in the input string.
+	Pos   int      // The starting position, in bytes, of this item in the input string.
 }
 
 func (item Item) String() string {
-	switch {
-	case item.Kind == ItemError:
+	if item.Kind == ItemError || item.Kind == ItemIdentifier || item.Kind == ItemNumber {
 		return item.Value
-	case item.Kind == ItemIdentifier || item.Kind == ItemNumber:
-		return fmt.Sprintf("%v:%v", item.Kind, item.Value)
 	}
 	return fmt.Sprintf("%v", item.Kind)
 }
@@ -139,14 +136,13 @@ const eof = -1
 type stateFn func(*Lexer) stateFn
 
 type Lexer struct {
-	Name    string    // Name of lexer for error reporting.
-	input   string    // The string being scanned.
-	state   stateFn   // The next lexing function to enter.
-	pos     int       // Current position in input.
-	start   int       // Start position of item in input.
-	width   int       // Width of last rune read from input.
-	lastPos int       // Position of most recent item returned by nextItem
-	items   chan Item // Scanned items.
+	Name  string    // Name of lexer for error reporting.
+	input string    // The string being scanned.
+	state stateFn   // The next lexing function to enter.
+	pos   int       // Current position in input.
+	start int       // Start position of item in input.
+	width int       // Width of last rune read from input.
+	items chan Item // Scanned items.
 }
 
 // Returns the next rune in the input.
@@ -210,11 +206,29 @@ func (l *Lexer) acceptLen() int {
 	return l.pos - l.start
 }
 
-// Reports which line we're on, based on the position of
-// the previous item returned by NextItem. Doing it this way
-// means we don't have to worry about peek double counting.
-func (l *Lexer) LineNumber() int {
-	return 1 + strings.Count(l.input[:l.lastPos], "\n")
+// Report the line number that item was from.
+func (l *Lexer) LineNumber(item Item) int {
+	line := 1 + strings.Count(l.input[:item.Pos], "\n")
+	if isEol(rune(l.input[item.Pos])) {
+		line++
+	}
+	return line
+}
+
+// Report the column number that item was from.
+func (l *Lexer) ColumnNumber(item Item) int {
+	column := 0
+	for i := item.Pos; i >= 0; i-- {
+		c := rune(l.input[i])
+		if isEol(c) {
+			break
+		}
+		if c&0x80 == 0 {
+			/* utf8 start character */
+			column++
+		}
+	}
+	return column
 }
 
 // Returns an error token and terminates the scan by passing
@@ -227,12 +241,11 @@ func (l *Lexer) errorf(format string, args ...interface{}) stateFn {
 // nextItem returns the next item from the input.
 func (l *Lexer) NextItem() Item {
 	item := <-l.items
-	l.lastPos = item.pos
 	return item
 }
 
 // Creates a new scanner for the input string.
-func Lex(name, input string) *Lexer {
+func NewLexer(name, input string) *Lexer {
 	l := &Lexer{
 		Name:  name,
 		input: input,

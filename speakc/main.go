@@ -84,8 +84,10 @@ func main() {
 
 	parser := new(Parser)
 	for _, filename := range f.speakFiles {
-		if err := parser.ParseFile(filename); err != nil {
-			fmt.Fprintf(os.Stderr, "%s\n", err)
+		if ok, errors := parser.ParseFile(filename); !ok {
+			for _, err := range errors {
+				fmt.Fprintf(os.Stderr, "%s\n", err)
+			}
 			os.Exit(1)
 		}
 	}

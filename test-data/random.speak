@@ -16,5 +16,5 @@ end
 
 // Random number response.
 message Response
-    values []uint32
+    1: values []uint32
 end
