@@ -19,8 +19,6 @@ var usageMessage = `usage: speakc [-h] -lang c|go speak-files
 
 Generate serialization code from speak interface definition files.
 
-Utility to breakdown a detailed OProfile report into functional domains.
-
 Options:
     -h           Display this text.
     -lang        Generate code for the specified language (c|go).
