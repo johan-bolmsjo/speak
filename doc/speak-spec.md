@@ -52,8 +52,6 @@ Keywords are not allowed to be used as message field names.
 Arrays
 ------
 
-TODO: Contemplate fixed size support.
-
 There are two types of arrays, fixed sized and dynamic sized. The syntax for
 fixed sized arrays is "[*number*]", where *number* is a positive non-zero
 integer value. The syntax for dynamic sized arrays is "[]".
@@ -90,14 +88,15 @@ Unsigned integers, the zero value is *0*.
 Custom Types
 ------------
 
-TODO: Contemplate custom type limitations.
+Custom types can be used as message or choice field types.
+The intended purpose of custom types is to create blob like types, for example
+IPv6 or SHA-1 types. They can only be created from basic types or arrays of
+basic types.
 
-Custom types can be used as message field types. The intended purpose of custom
-types is to provide a means to add functionality to them in the native
-language. For example an IPv6 pretty printer could be written for a type defined
-as follows:
+Examples:
 
     type Ipv6Address [16]byte
+    type Sha1        [20]byte
 
 The grammar is as follows:
 
@@ -108,7 +107,7 @@ Choices
 
 Choices select one of many other choice or message types.
 
-    ChoiceDef        = "choice" BigIdentifier NewLine { EnumField } End .
+    ChoiceDef        = "choice" BigIdentifier NewLine { ChoiceField } End .
     ChoiceField      = Tag ChoiceIdentifier NewLine .
     ChoiceIdentifier = [ Identifier "." ] BigIdentifier
 
@@ -217,9 +216,8 @@ type.
 Maps
 ----
 
-Maps are used to encode the *Speak* messages themselves. Message field tags are
-keys and message field values are values. The length specifies the number of
-key + value pairs that follows.
+Maps are used to encode *Speak* messages and choices. Tags are keys and fields
+values. The length specifies the number of key + value pairs that follows.
 
 Raw (Bytes)
 -----------

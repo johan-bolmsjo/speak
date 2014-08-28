@@ -56,8 +56,6 @@ enum      type
 
 <h2>Arrays</h2>
 
-<p>TODO: Contemplate fixed size support.</p>
-
 <p>There are two types of arrays, fixed sized and dynamic sized. The syntax for
 fixed sized arrays is &ldquo;[<em>number</em>]&ldquo;, where <em>number</em> is a positive non-zero
 integer value. The syntax for dynamic sized arrays is &ldquo;[]&ldquo;.</p>
@@ -94,14 +92,15 @@ integer value. The syntax for dynamic sized arrays is &ldquo;[]&ldquo;.</p>
 
 <h2>Custom Types</h2>
 
-<p>TODO: Contemplate custom type limitations.</p>
+<p>Custom types can be used as message or choice field types.
+The intended purpose of custom types is to create blob like types, for example
+IPv6 or SHA-1 types. They can only be created from basic types or arrays of
+basic types.</p>
 
-<p>Custom types can be used as message field types. The intended purpose of custom
-types is to provide a means to add functionality to them in the native
-language. For example an IPv6 pretty printer could be written for a type defined
-as follows:</p>
+<p>Examples:</p>
 
 <pre><code>type Ipv6Address [16]byte
+type Sha1        [20]byte
 </code></pre>
 
 <p>The grammar is as follows:</p>
@@ -113,8 +112,9 @@ as follows:</p>
 
 <p>Choices select one of many other choice or message types.</p>
 
-<pre><code>ChoiceDef   = &quot;choice&quot; BigIdentifier NewLine { EnumField } End .
-ChoiceField = Tag BigIdentifier NewLine .
+<pre><code>ChoiceDef        = &quot;choice&quot; BigIdentifier NewLine { ChoiceField } End .
+ChoiceField      = Tag ChoiceIdentifier NewLine .
+ChoiceIdentifier = [ Identifier &quot;.&quot; ] BigIdentifier
 </code></pre>
 
 <h2>Messages</h2>
@@ -130,7 +130,7 @@ TypeIdentifier = BasicType | [ Identifier &quot;.&quot; ] BigIdentifier .
 <h2>Enumerations</h2>
 
 <p>Enumerations associate symbolic names with positive integer values. They are
-encoded as msgpack integer types.</p>
+encoded as msgpack integer types. The allowed value range is 0 to 2^32-1.</p>
 
 <pre><code>EnumDef   = &quot;enum&quot; BigIdentifier NewLine { EnumField } End .
 EnumField = Tag BigIdentifier NewLine .
@@ -150,7 +150,7 @@ reference. Package dependencies must form a DAG.</p>
 
 <p>The complete grammar to parse <em>Speak</em> (except comments).</p>
 
-<pre><code>Grammar = { EnumDef | MessageDef | PackageDef | TypeDef } .
+<pre><code>Grammar = { ChoiceDef | EnumDef | MessageDef | PackageDef | TypeDef } .
 </code></pre>
 
 <h2>Misc Grammar</h2>
@@ -217,9 +217,8 @@ type.</p>
 
 <h2>Maps</h2>
 
-<p>Maps are used to encode the <em>Speak</em> messages themselves. Message field tags are
-keys and message field values are values. The length specifies the number of
-key + value pairs that follows.</p>
+<p>Maps are used to encode <em>Speak</em> messages and choices. Tags are keys and fields
+values. The length specifies the number of key + value pairs that follows.</p>
 
 <h2>Raw (Bytes)</h2>
 

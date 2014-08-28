@@ -12,9 +12,9 @@ message Message
 end
 
 enum MessageKind
-     0: OneWay
-     1: Request
-     2: Response
+    0: OneWay
+    1: Request
+    2: Response
 end
 
 choice Protocol
