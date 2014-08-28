@@ -92,7 +92,11 @@ integer value. The syntax for dynamic sized arrays is &ldquo;[]&ldquo;.</p>
 
 <h2>Custom Types</h2>
 
-<p>Custom types can be used as message or choice field types.
+<p>TODO:
+Figure out how to make this work with choices.
+Choices only work with &ldquo;pointer&rdquo; types.</p>
+
+<p>Custom types can be used as message field types.
 The intended purpose of custom types is to create blob like types, for example
 IPv6 or SHA-1 types. They can only be created from basic types or arrays of
 basic types.</p>
@@ -113,8 +117,7 @@ type Sha1        [20]byte
 <p>Choices select one of many other choice or message types.</p>
 
 <pre><code>ChoiceDef        = &quot;choice&quot; BigIdentifier NewLine { ChoiceField } End .
-ChoiceField      = Tag ChoiceIdentifier NewLine .
-ChoiceIdentifier = [ Identifier &quot;.&quot; ] BigIdentifier
+ChoiceField      = Tag FqTypeIdentifier NewLine .
 </code></pre>
 
 <h2>Messages</h2>
@@ -122,9 +125,9 @@ ChoiceIdentifier = [ Identifier &quot;.&quot; ] BigIdentifier
 <p>Messages contain tagged fields of basic, custom, choice or other
 message types.</p>
 
-<pre><code>MessageDef     = &quot;message&quot; BigIdentifier NewLine { MessageField } End .
-MessageField   = Tag LittleIdentifier [ Array ] TypeIdentifier NewLine .
-TypeIdentifier = BasicType | [ Identifier &quot;.&quot; ] BigIdentifier .
+<pre><code>MessageDef       = &quot;message&quot; BigIdentifier NewLine { MessageField } End .
+MessageField     = Tag LittleIdentifier [ Array ] MessageFieldType NewLine .
+MessageFieldType = BasicType | FqTypeIdentifier .
 </code></pre>
 
 <h2>Enumerations</h2>
@@ -163,6 +166,7 @@ CapitalLetter    = &quot;A&quot; ... &quot;Z&quot; .
 Identifier       = Letter { Letter | Digit } .
 BigIdentifier    = CapitalLetter { Letter | Digit } .
 LittleIdentifier = LowerCaseLetter { Letter | Digit } .
+FqTypeIdentifier = [ Identifier &quot;.&quot; ] BigIdentifier .
 Tag              = PositiveNumber &quot;:&quot; .
 End              = &quot;end&quot; NewLine .
 NewLine          = &quot;\n&quot; .

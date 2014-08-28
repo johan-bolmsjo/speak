@@ -88,7 +88,11 @@ Unsigned integers, the zero value is *0*.
 Custom Types
 ------------
 
-Custom types can be used as message or choice field types.
+TODO:
+Figure out how to make this work with choices.
+Choices only work with "pointer" types.
+
+Custom types can be used as message field types.
 The intended purpose of custom types is to create blob like types, for example
 IPv6 or SHA-1 types. They can only be created from basic types or arrays of
 basic types.
@@ -108,8 +112,7 @@ Choices
 Choices select one of many other choice or message types.
 
     ChoiceDef        = "choice" BigIdentifier NewLine { ChoiceField } End .
-    ChoiceField      = Tag ChoiceIdentifier NewLine .
-    ChoiceIdentifier = [ Identifier "." ] BigIdentifier
+    ChoiceField      = Tag FqTypeIdentifier NewLine .
 
 Messages
 --------
@@ -117,9 +120,9 @@ Messages
 Messages contain tagged fields of basic, custom, choice or other
 message types.
 
-    MessageDef     = "message" BigIdentifier NewLine { MessageField } End .
-    MessageField   = Tag LittleIdentifier [ Array ] TypeIdentifier NewLine .
-    TypeIdentifier = BasicType | [ Identifier "." ] BigIdentifier .
+    MessageDef       = "message" BigIdentifier NewLine { MessageField } End .
+    MessageField     = Tag LittleIdentifier [ Array ] MessageFieldType NewLine .
+    MessageFieldType = BasicType | FqTypeIdentifier .
 
 Enumerations
 ------------
@@ -158,6 +161,7 @@ Misc Grammar
     Identifier       = Letter { Letter | Digit } .
     BigIdentifier    = CapitalLetter { Letter | Digit } .
     LittleIdentifier = LowerCaseLetter { Letter | Digit } .
+    FqTypeIdentifier = [ Identifier "." ] BigIdentifier .
     Tag              = PositiveNumber ":" .
     End              = "end" NewLine .
     NewLine          = "\n" .
