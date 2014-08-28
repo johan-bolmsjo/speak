@@ -307,15 +307,16 @@ func (p *Parser) parseArray() bool {
 }
 
 func (p *Parser) parseFqTypeIdentifier() bool {
-	p.expect(ItemIdentifier)
-	item0 := p.prev
-	if p.accept(ItemDot) {
-		// <package> . BigIdentifier
-		p.expectM(matchBigIdentifier)
-	} else {
-		// BigIdentifier
-		if err := matchBigIdentifier(item0); err != nil {
-			p.itemError(item0, err)
+	if p.expect(ItemIdentifier) {
+		item0 := p.prev
+		if p.accept(ItemDot) {
+			// <package> . BigIdentifier
+			p.expectM(matchBigIdentifier)
+		} else {
+			// BigIdentifier
+			if err := matchBigIdentifier(item0); err != nil {
+				p.itemError(item0, err)
+			}
 		}
 	}
 	return p.ok()
