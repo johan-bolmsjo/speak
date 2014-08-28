@@ -25,11 +25,11 @@ func readFile(filename string) (string, error) {
 
 // Parser holds the state from parsing one or more files.
 type Parser struct {
-	lexer  *Lexer
-	prev   Item    // Previous item from lexer (accepted).
-	next   Item    // Next item from lexer (to be accepted).
-	errors []error // Errors found by the lexer or parser.
-	pkg    string  // Package that is being parsed.
+	lexer       *Lexer  // Lexer used to parse the current file.
+	prev        Item    // Previous item from lexer (accepted).
+	next        Item    // Next item from lexer (to be accepted).
+	errors      []error // Errors found by the lexer or parser.
+	packageName string  // Current package that is being parsed.
 }
 
 func (p *Parser) ParseFile(filename string) (bool, []error) {
@@ -103,20 +103,40 @@ func (p *Parser) ok() bool {
 	return len(p.errors) == 0
 }
 
-// TODO: Need to figure out how to do error handling.
-func (p *Parser) itemError(item Item, postfix error) {
-	err := error(nil)
-	line := p.lexer.LineNumber(item)
-	column := p.lexer.ColumnNumber(item)
-	if item.Kind == ItemError {
-		err = fmt.Errorf("%s:%d:%d: error: %v", p.lexer.Name, line, column, item)
+// ----------------------------------------------------------------------------
+
+type ErrorCtx struct {
+	lexer *Lexer
+	item  Item
+}
+
+func (ctx *ErrorCtx) Error(details error) error {
+	line := ctx.lexer.LineNumber(ctx.item)
+	column := ctx.lexer.ColumnNumber(ctx.item)
+	if ctx.item.Kind == ItemError {
+		return fmt.Errorf("%s:%d:%d: error: %v", ctx.lexer.Name, line, column, ctx.item)
 	} else {
-		if postfix == nil {
-			postfix = errors.New("unexpected token")
+		if details == nil {
+			details = errors.New("unexpected token")
 		}
-		err = fmt.Errorf("%s:%d:%d: error: at '%v', %s.", p.lexer.Name, line, column, item, postfix)
+		return fmt.Errorf("%s:%d:%d: error: at '%v', %s.", ctx.lexer.Name, line, column, ctx.item, details)
 	}
-	p.errors = append(p.errors, err)
+}
+
+// Create an error context based on current lexer and item information.
+// The error context can be used at a later time for correct error reporting.
+func (p *Parser) errorCtx(item Item) ErrorCtx {
+	return ErrorCtx{p.lexer, item}
+}
+
+// Report an error while parsing an item from the current lexer.
+func (p *Parser) itemError(item Item, details error) {
+	p.pushError(p.errorCtx(item), details)
+}
+
+// Report an error based on an error context.
+func (p *Parser) pushError(ctx ErrorCtx, details error) {
+	p.errors = append(p.errors, ctx.Error(details))
 }
 
 // ----------------------------------------------------------------------------
@@ -179,6 +199,33 @@ out:
 
 // ----------------------------------------------------------------------------
 
+// TODO: finish implementation
+type FqTypeIdentifier struct {
+	packageName string
+	typeName    string
+}
+
+// TODO: finish implementation
+func (t *FqTypeIdentifier) String() string {
+	return t.packageName + "." + t.typeName
+}
+
+// ----------------------------------------------------------------------------
+// choice
+
+// TODO: finish implementation
+type Choice struct {
+	typeId   FqTypeIdentifier
+	errorCtx ErrorCtx
+}
+
+// TODO: finish implementation
+type ChoiceField struct {
+	tag      uint32
+	typeId   FqTypeIdentifier
+	errorCtx ErrorCtx
+}
+
 func (p *Parser) parseChoice() {
 	if p.expectM(matchBigIdentifier) && p.expect(ItemEol) {
 		for p.ok() && !p.accept(ItemEnd) {
@@ -187,26 +234,12 @@ func (p *Parser) parseChoice() {
 	}
 }
 
-func (p *Parser) parseChoiceIdentifier() bool {
-	p.expect(ItemIdentifier)
-	item0 := p.prev
-	if p.accept(ItemDot) {
-		// <package> . BigIdentifier
-		p.expectM(matchBigIdentifier)
-	} else {
-		// BigIdentifier
-		if err := matchBigIdentifier(item0); err != nil {
-			p.itemError(item0, err)
-		}
-	}
-	return p.ok()
-}
-
 func (p *Parser) parseChoiceField() {
-	_ = p.expect(ItemNumber) && p.expect(ItemColon) && p.parseChoiceIdentifier() && p.expect(ItemEol)
+	_ = p.expect(ItemNumber) && p.expect(ItemColon) && p.parseFqTypeIdentifier() && p.expect(ItemEol)
 }
 
 // ----------------------------------------------------------------------------
+// enum
 
 func (p *Parser) parseEnum() {
 	if p.expectM(matchBigIdentifier) && p.expect(ItemEol) {
@@ -221,6 +254,7 @@ func (p *Parser) parseEnumField() {
 }
 
 // ----------------------------------------------------------------------------
+// message
 
 func (p *Parser) parseMessage() {
 	if p.expectM(matchBigIdentifier) && p.expect(ItemEol) {
@@ -232,9 +266,36 @@ func (p *Parser) parseMessage() {
 
 func (p *Parser) parseMessageField() {
 	if p.expect(ItemNumber) && p.expect(ItemColon) && p.expectM(matchLittleIdentifier) {
-		_ = p.parseArray() && p.parseTypeIdentifier() && p.expect(ItemEol)
+		_ = p.parseArray() && p.parseMessageFieldType() && p.expect(ItemEol)
 	}
 }
+
+func (p *Parser) parseMessageFieldType() bool {
+	if p.acceptM(matchBasicType) {
+	} else {
+		p.parseFqTypeIdentifier()
+	}
+	return p.ok()
+}
+
+// ----------------------------------------------------------------------------
+// package
+
+func (p *Parser) parsePackage() {
+	if p.expect(ItemIdentifier) {
+		p.packageName = p.prev.Value
+		p.expect(ItemEol)
+	}
+}
+
+// ----------------------------------------------------------------------------
+// type
+
+func (p *Parser) parseType() {
+	_ = p.expectM(matchBigIdentifier) && p.parseArray() && p.expectM(matchBasicType) && p.expect(ItemEol)
+}
+
+// ----------------------------------------------------------------------------
 
 func (p *Parser) parseArray() bool {
 	if p.accept(ItemLeftBracket) {
@@ -245,28 +306,17 @@ func (p *Parser) parseArray() bool {
 	return p.ok()
 }
 
-func (p *Parser) parseTypeIdentifier() bool {
-	if p.acceptM(matchBasicType) {
+func (p *Parser) parseFqTypeIdentifier() bool {
+	p.expect(ItemIdentifier)
+	item0 := p.prev
+	if p.accept(ItemDot) {
+		// <package> . BigIdentifier
+		p.expectM(matchBigIdentifier)
 	} else {
-		// TODO: Rename this function if it's to be shared between message and choice parsing.
-		p.parseChoiceIdentifier()
+		// BigIdentifier
+		if err := matchBigIdentifier(item0); err != nil {
+			p.itemError(item0, err)
+		}
 	}
 	return p.ok()
 }
-
-// ----------------------------------------------------------------------------
-
-func (p *Parser) parsePackage() {
-	if p.expect(ItemIdentifier) {
-		p.pkg = p.prev.Value
-		p.expect(ItemEol)
-	}
-}
-
-// ----------------------------------------------------------------------------
-
-func (p *Parser) parseType() {
-	_ = p.expectM(matchBigIdentifier) && p.parseArray() && p.expectM(matchBasicType) && p.expect(ItemEol)
-}
-
-// ----------------------------------------------------------------------------
