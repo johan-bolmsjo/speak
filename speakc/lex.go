@@ -217,7 +217,7 @@ func (l *Lexer) LineNumber(item Item) int {
 
 // Report the column number that item was from.
 func (l *Lexer) ColumnNumber(item Item) int {
-	column := 0
+	column := -1
 	for i := item.Pos; i >= 0; i-- {
 		c := rune(l.input[i])
 		if isEol(c) {
