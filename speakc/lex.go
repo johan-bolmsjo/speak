@@ -208,17 +208,30 @@ func (l *Lexer) acceptLen() int {
 
 // Report the line number that item was from.
 func (l *Lexer) LineNumber(item Item) int {
-	line := 1 + strings.Count(l.input[:item.Pos], "\n")
-	if isEol(rune(l.input[item.Pos])) {
-		line++
+	if item.Kind == ItemEof {
+		return 1 + strings.Count(l.input, "\n")
+	} else {
+		line := 1 + strings.Count(l.input[:item.Pos], "\n")
+		if isEol(rune(l.input[item.Pos])) {
+			line++
+		}
+		return line
 	}
-	return line
 }
 
 // Report the column number that item was from.
 func (l *Lexer) ColumnNumber(item Item) int {
 	column := -1
-	for i := item.Pos; i >= 0; i-- {
+	pos := item.Pos
+	if item.Kind == ItemEof {
+		if pos > 0 {
+			pos--
+			column++
+		} else {
+			return 0
+		}
+	}
+	for i := pos; i >= 0; i-- {
 		c := rune(l.input[i])
 		if isEol(c) {
 			break
