@@ -53,8 +53,8 @@ Arrays
 ------
 
 There are two types of arrays, fixed sized and dynamic sized. The syntax for
-fixed sized arrays is "[*number*]", where *number* is a positive non-zero
-integer value. The syntax for dynamic sized arrays is "[]".
+fixed sized arrays is "[*number*]", where *number* is a positive integer value.
+The syntax for dynamic sized arrays is "[]".
 
     Array  = "[" [ PositiveNumber ] "]" .
 
@@ -88,14 +88,9 @@ Unsigned integers, the zero value is *0*.
 Custom Types
 ------------
 
-TODO:
-Figure out how to make this work with choices.
-Choices only work with "pointer" types.
-
-Custom types can be used as message field types.
-The intended purpose of custom types is to create blob like types, for example
-IPv6 or SHA-1 types. They can only be created from basic types or arrays of
-basic types.
+Custom types can be used as choice and message field types. The intended
+purpose of custom types is to create blob like types, for example IPv6 or
+SHA-1 types.
 
 Examples:
 
@@ -104,15 +99,15 @@ Examples:
 
 The grammar is as follows:
 
-    TypeDef = "type" BigIdentifier [ Array ] BasicType NewLine .
+    TypeDef = "type" BigIdentifier [ Array ] MessageFieldType NewLine .
 
 Choices
 -------
 
-Choices select one of many other choice or message types.
+Choices selects zero or one of many choice, message or custom types.
 
     ChoiceDef        = "choice" BigIdentifier NewLine { ChoiceField } End .
-    ChoiceField      = Tag FqTypeIdentifier NewLine .
+    ChoiceField      = PositiveTag FqTypeIdentifier NewLine .
 
 Messages
 --------
@@ -121,7 +116,7 @@ Messages contain tagged fields of basic, custom, choice or other
 message types.
 
     MessageDef       = "message" BigIdentifier NewLine { MessageField } End .
-    MessageField     = Tag LittleIdentifier [ Array ] MessageFieldType NewLine .
+    MessageField     = PositiveTag LittleIdentifier [ Array ] MessageFieldType NewLine .
     MessageFieldType = BasicType | FqTypeIdentifier .
 
 Enumerations
@@ -131,7 +126,7 @@ Enumerations associate symbolic names with positive integer values. They are
 encoded as msgpack integer types. The allowed value range is 0 to 2^32-1.
 
     EnumDef   = "enum" BigIdentifier NewLine { EnumField } End .
-    EnumField = Tag BigIdentifier NewLine .
+    EnumField = UnsignedTag BigIdentifier NewLine .
 
 Packages
 --------
@@ -153,7 +148,8 @@ The complete grammar to parse *Speak* (except comments).
 Misc Grammar
 ------------
 
-    PositiveNumber   = Digit | "1" ... "9" { Digit } .
+    UnsignedNumber   = Digit | PositiveNumber .
+    PositiveNumber   = "1" ... "9" { Digit } .
     Digit            = "0" ... "9" .
     Letter           = LowerCaseLetter | CapitalLetter .
     LowerCaseLetter  = "a" ... "z" .
@@ -162,7 +158,8 @@ Misc Grammar
     BigIdentifier    = CapitalLetter { Letter | Digit } .
     LittleIdentifier = LowerCaseLetter { Letter | Digit } .
     FqTypeIdentifier = [ Identifier "." ] BigIdentifier .
-    Tag              = PositiveNumber ":" .
+    UnsignedTag      = UnsignedNumber ":" .
+    PositiveTag      = PositiveNumber ":" .
     End              = "end" NewLine .
     NewLine          = "\n" .
 
