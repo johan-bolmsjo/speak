@@ -141,6 +141,17 @@ func (p *Parser) pushError(ctx ErrorCtx, details error) {
 
 // ----------------------------------------------------------------------------
 
+// Match positive numbers (numbers greater than zero).
+func matchPositiveNumber(item Item) error {
+	if item.Kind == ItemNumber {
+		r := item.Value[0]
+		if '1' <= r && r <= '9' {
+			return nil
+		}
+	}
+	return errors.New("expected positive number")
+}
+
 // BigIdentifier match function.
 func matchBigIdentifier(item Item) error {
 	if item.Kind == ItemIdentifier {
@@ -235,7 +246,7 @@ func (p *Parser) parseChoice() {
 }
 
 func (p *Parser) parseChoiceField() {
-	_ = p.expect(ItemNumber) && p.expect(ItemColon) && p.parseFqTypeIdentifier() && p.expect(ItemEol)
+	_ = p.expectM(matchPositiveNumber) && p.expect(ItemColon) && p.parseFqTypeIdentifier() && p.expect(ItemEol)
 }
 
 // ----------------------------------------------------------------------------
@@ -265,7 +276,7 @@ func (p *Parser) parseMessage() {
 }
 
 func (p *Parser) parseMessageField() {
-	if p.expect(ItemNumber) && p.expect(ItemColon) && p.expectM(matchLittleIdentifier) {
+	if p.expectM(matchPositiveNumber) && p.expect(ItemColon) && p.expectM(matchLittleIdentifier) {
 		_ = p.parseArray() && p.parseMessageFieldType() && p.expect(ItemEol)
 	}
 }
@@ -292,15 +303,14 @@ func (p *Parser) parsePackage() {
 // type
 
 func (p *Parser) parseType() {
-	_ = p.expectM(matchBigIdentifier) && p.parseArray() && p.expectM(matchBasicType) && p.expect(ItemEol)
+	_ = p.expectM(matchBigIdentifier) && p.parseArray() && p.parseMessageFieldType() && p.expect(ItemEol)
 }
 
 // ----------------------------------------------------------------------------
 
 func (p *Parser) parseArray() bool {
 	if p.accept(ItemLeftBracket) {
-		// TODO: check that number > 0 if present.
-		p.accept(ItemNumber)
+		p.acceptM(matchPositiveNumber)
 		p.expect(ItemRightBracket)
 	}
 	return p.ok()
