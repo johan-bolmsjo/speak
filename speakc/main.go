@@ -13,8 +13,6 @@ import (
 	"strings"
 )
 
-// ----------------------------------------------------------------------------
-
 var usageMessage = `usage: speakc [-h] -lang c|go speak-files
 
 Generate serialization code from speak interface definition files.
@@ -28,8 +26,6 @@ Example:
 
     speakc -lang c *.speak
 `
-
-// ----------------------------------------------------------------------------
 
 type flags struct {
 	help       bool
@@ -71,8 +67,6 @@ func (f *flags) Parse() error {
 	return nil
 }
 
-// ----------------------------------------------------------------------------
-
 func main() {
 	var f flags
 	if err := f.Parse(); err != nil {
@@ -90,5 +84,3 @@ func main() {
 		}
 	}
 }
-
-// ----------------------------------------------------------------------------

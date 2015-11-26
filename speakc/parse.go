@@ -11,8 +11,6 @@ import (
 	"io/ioutil"
 )
 
-// ----------------------------------------------------------------------------
-
 func readFile(filename string) (string, error) {
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -20,8 +18,6 @@ func readFile(filename string) (string, error) {
 	}
 	return string(data), nil
 }
-
-// ----------------------------------------------------------------------------
 
 // Parser holds the state from parsing one or more files.
 type Parser struct {
@@ -48,8 +44,6 @@ func (p *Parser) ParseText(name, text string) (bool, []error) {
 	p.parseRoot()
 	return p.ok(), p.errors
 }
-
-// ----------------------------------------------------------------------------
 
 // Get the next item from the lexer.
 func (p *Parser) consume() {
@@ -103,8 +97,6 @@ func (p *Parser) ok() bool {
 	return len(p.errors) == 0
 }
 
-// ----------------------------------------------------------------------------
-
 type ErrorCtx struct {
 	lexer *Lexer
 	item  Item
@@ -138,8 +130,6 @@ func (p *Parser) itemError(item Item, details error) {
 func (p *Parser) pushError(ctx ErrorCtx, details error) {
 	p.errors = append(p.errors, ctx.Error(details))
 }
-
-// ----------------------------------------------------------------------------
 
 // Match positive numbers (numbers greater than zero).
 func matchPositiveNumber(item Item) error {
@@ -182,8 +172,6 @@ func matchBasicType(item Item) error {
 	return errors.New("expected basic type")
 }
 
-// ----------------------------------------------------------------------------
-
 // Top level parser.
 func (p *Parser) parseRoot() {
 out:
@@ -208,8 +196,6 @@ out:
 	}
 }
 
-// ----------------------------------------------------------------------------
-
 // TODO: finish implementation
 type FqTypeIdentifier struct {
 	packageName string
@@ -220,9 +206,6 @@ type FqTypeIdentifier struct {
 func (t *FqTypeIdentifier) String() string {
 	return t.packageName + "." + t.typeName
 }
-
-// ----------------------------------------------------------------------------
-// choice
 
 // TODO: finish implementation
 type Choice struct {
@@ -249,9 +232,6 @@ func (p *Parser) parseChoiceField() {
 	_ = p.expectM(matchPositiveNumber) && p.expect(ItemColon) && p.parseFqTypeIdentifier() && p.expect(ItemEol)
 }
 
-// ----------------------------------------------------------------------------
-// enum
-
 func (p *Parser) parseEnum() {
 	if p.expectM(matchBigIdentifier) && p.expect(ItemEol) {
 		for p.ok() && !p.accept(ItemEnd) {
@@ -263,9 +243,6 @@ func (p *Parser) parseEnum() {
 func (p *Parser) parseEnumField() {
 	_ = p.expect(ItemNumber) && p.expect(ItemColon) && p.expectM(matchBigIdentifier) && p.expect(ItemEol)
 }
-
-// ----------------------------------------------------------------------------
-// message
 
 func (p *Parser) parseMessage() {
 	if p.expectM(matchBigIdentifier) && p.expect(ItemEol) {
@@ -289,9 +266,6 @@ func (p *Parser) parseMessageFieldType() bool {
 	return p.ok()
 }
 
-// ----------------------------------------------------------------------------
-// package
-
 func (p *Parser) parsePackage() {
 	if p.expect(ItemIdentifier) {
 		p.packageName = p.prev.Value
@@ -299,14 +273,9 @@ func (p *Parser) parsePackage() {
 	}
 }
 
-// ----------------------------------------------------------------------------
-// type
-
 func (p *Parser) parseType() {
 	_ = p.expectM(matchBigIdentifier) && p.parseArray() && p.parseMessageFieldType() && p.expect(ItemEol)
 }
-
-// ----------------------------------------------------------------------------
 
 func (p *Parser) parseArray() bool {
 	if p.accept(ItemLeftBracket) {
