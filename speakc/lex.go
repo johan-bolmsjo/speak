@@ -236,7 +236,7 @@ func (l *Lexer) ColumnNumber(item Item) int {
 		if isEol(c) {
 			break
 		}
-		if c&0x80 == 0 {
+		if utf8.RuneStart(byte(c)) {
 			/* utf8 start character */
 			column++
 		}
